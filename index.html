@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Генерация пароля v2</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    html,body{
+      height: 100%
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container-fluid h-100 d-flex align-items-center justify-content-center">
+    <div class="row">
+      <div class="col-10 mx-auto border bg-light px-3 py-3 mt-3 rounded-2">
+        <form id="genPass" class="row">
+          <div class="col">
+            <div class="mb-3">
+              <label class="form-label">P (вероятность)</label>
+              <input type="number" class="form-control" step=any value="0.0001" id="p" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">V (паролей/мин) </label>
+              <input type="number" class="form-control" step=any value="10" id="v" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">T (дней)</label>
+              <input type="number" class="form-control" step=any value="30" id="t" required>
+            </div>
+          </div>
+          <div class="col border-start mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="26" id="latB">
+              <label class="form-check-label">
+                Латинские большие
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="26" id="latS">
+              <label class="form-check-label">
+                Латинские маленькие
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="33" id="rusB">
+              <label class="form-check-label">
+                Русские большие
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="33" id="rusS">
+              <label class="form-check-label">
+                Русские маленькие
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="31" id="symb">
+              <label class="form-check-label">
+                Символы
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" value="10" id="nums">
+              <label class="form-check-label">
+                Цифры
+              </label>
+            </div>
+          </div>
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary" disabled>Генерировать</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Modal -->
+  <div class="modal fade" id="staticModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="staticModalLabel">Ответ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row mb-3">
+            <div class="col">
+              S* (нижняя граница паролей)
+            </div>
+            <div class="col">
+              <input type="text" class="form-control" value="" id="s" disabled>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col">
+              A (мощность алфавита)
+            </div>
+            <div class="col">
+              <input type="text" class="form-control" value="" id="a" disabled>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col">
+              L (длинна пароля)
+            </div>
+            <div class="col">
+              <input type="text" class="form-control" value="" id="l" disabled>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              Пароль
+            </div>
+            <div class="col">
+              <input type="text" class="form-control" value="" id="password" disabled>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+<script type="text/javascript">
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min; //Максимум не включается, минимум включается
+}
+var myModal = new bootstrap.Modal(document.getElementById('staticModal'), {
+  keyboard: false,
+  backdrop: 'static'
+})
+$(() => {
+  $("input").change( function(){
+    let checkedInputs = 0
+    $('input:checked').each((i, elem) => {
+        checkedInputs += parseInt($(elem).prop('value'))
+    })
+    if (checkedInputs == 0)
+      $("button").prop("disabled", true)
+    else
+      $("button").prop("disabled", false)
+  });
+
+  $('#genPass').submit((e) => {
+    myModal.show()
+    event.preventDefault()
+    let P = parseFloat($("#p").val())
+    let T = parseFloat($("#t").val())
+    let V = parseFloat($("#v").val())
+    let S = (V*T)/P
+
+    let A = 0
+
+    $('input:checked').each((i, elem) => {
+        A += parseInt($(elem).prop('value'))
+    })
+
+    let L = 1;
+
+    for (let i = L; Math.pow(A, L) <= S; i++) {
+      L = i
+    }
+
+    function passGen(L) {
+      let Alphabet = "";
+      let password = "";
+
+      if ($("#latB:checked").val() != undefined) Alphabet += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      if ($("#latS:checked").val() != undefined) Alphabet += "abcdefghijklmnopqrstuvwxyz"
+      if ($("#rusB:checked").val() != undefined) Alphabet += "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+      if ($("#rusS:checked").val() != undefined) Alphabet += "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+      if ($("#symb:checked").val() != undefined) Alphabet += "!\"#$%&()*+,-./:;<=>?@[\\]^_`{|}~"
+      if ($("#nums:checked").val() != undefined) Alphabet += "0123456789"
+      console.log(Alphabet);
+      for (var i = L; i > 0; i--) {
+        let rNum = getRandomInt(0, Alphabet.length)
+        password += Alphabet.charAt(rNum)
+      }
+
+      return password
+    }
+    $("#a").val(A)
+    $("#s").val(S)
+    $("#l").val(L)
+    $("#password").val(passGen(L))
+    console.log(`A: ${A} S*: ${S} L: ${L} Password: ${$("#password").val()}`)
+  })
+})
+</script>
+
+</html>
